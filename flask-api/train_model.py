@@ -1,16 +1,15 @@
 """
-Simple LSTM model trainer for time-series prediction demonstration.
-This creates a basic model that can be used with the Flask API.
+Simple time-series model trainer using scikit-learn.
+Much lighter than TensorFlow for demonstration purposes.
 """
 
 import numpy as np
 import pandas as pd
 import pickle
 import os
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.optimizers import Adam
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from datetime import datetime, timedelta
 import logging
 
@@ -42,104 +41,79 @@ def generate_sample_data(n_points=1000):
     return df
 
 
-def create_sequences(data, lookback_window=60):
-    """Create sequences for LSTM training"""
+def create_features(data, lookback_window=5):
+    """Create features for time-series prediction using lagged values"""
     X, y = [], []
+    
     for i in range(lookback_window, len(data)):
-        X.append(data[i-lookback_window:i])
-        y.append(data[i])
+        # Use past 'lookback_window' values as features
+        features = data[i-lookback_window:i]
+        target = data[i]
+        
+        X.append(features)
+        y.append(target)
+    
     return np.array(X), np.array(y)
 
 
-def build_lstm_model(input_shape):
-    """Build LSTM model"""
-    model = Sequential([
-        LSTM(50, return_sequences=True, input_shape=input_shape),
-        Dropout(0.2),
-        LSTM(50, return_sequences=False),
-        Dropout(0.2),
-        Dense(25),
-        Dense(1)
-    ])
-
-    model.compile(optimizer=Adam(learning_rate=0.001),
-                  loss='mse', metrics=['mae'])
-    return model
-
-
 def train_model():
-    """Train the LSTM model and save it"""
-    logger.info("Starting model training...")
-
-    # Generate sample data
+    """Train a simple RandomForest model for time-series prediction"""
     logger.info("Generating sample data...")
     df = generate_sample_data(1000)
-
-    # Prepare data
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(df[['value']])
-
-    # Create sequences
-    lookback_window = 60
-    X, y = create_sequences(scaled_data, lookback_window)
-
-    # Split into train/validation
-    split_idx = int(0.8 * len(X))
-    X_train, X_val = X[:split_idx], X[split_idx:]
-    y_train, y_val = y[:split_idx], y[split_idx:]
-
-    logger.info(f"Training data shape: {X_train.shape}")
-    logger.info(f"Validation data shape: {X_val.shape}")
-
-    # Build and train model
-    model = build_lstm_model((lookback_window, 1))
-
-    logger.info("Training model...")
-    history = model.fit(
-        X_train, y_train,
-        batch_size=32,
-        epochs=50,
-        validation_data=(X_val, y_val),
-        verbose=1
+    
+    # Extract values
+    values = df['value'].values
+    
+    # Create features and targets
+    logger.info("Creating features...")
+    X, y = create_features(values, lookback_window=5)
+    
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, shuffle=False
     )
-
-    # Evaluate model
-    train_loss = model.evaluate(X_train, y_train, verbose=0)
-    val_loss = model.evaluate(X_val, y_val, verbose=0)
-
-    logger.info(f"Training Loss: {train_loss}")
-    logger.info(f"Validation Loss: {val_loss}")
-
+    
+    # Scale features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Train model
+    logger.info("Training RandomForest model...")
+    model = RandomForestRegressor(
+        n_estimators=50,
+        max_depth=10,
+        random_state=42,
+        n_jobs=-1
+    )
+    
+    model.fit(X_train_scaled, y_train)
+    
+    # Evaluate
+    train_score = model.score(X_train_scaled, y_train)
+    test_score = model.score(X_test_scaled, y_test)
+    
+    logger.info(f"Training R² score: {train_score:.4f}")
+    logger.info(f"Testing R² score: {test_score:.4f}")
+    
     # Save model and scaler
+    model_dir = '/app/models' if os.path.exists('/app') else './models'
+    os.makedirs(model_dir, exist_ok=True)
+    
     model_data = {
         'model': model,
         'scaler': scaler,
-        'feature_columns': ['value'],
-        'lookback_window': lookback_window,
-        'training_history': {
-            'train_loss': float(train_loss[0]),
-            'val_loss': float(val_loss[0]),
-            'final_epoch': len(history.history['loss'])
-        },
-        'created_at': datetime.now().isoformat()
+        'lookback_window': 5,
+        'train_score': train_score,
+        'test_score': test_score
     }
-
-    # Create models directory if it doesn't exist
-    os.makedirs('models', exist_ok=True)
-
-    # Save the model
-    model_path = 'models/lstm_model.pkl'
+    
+    model_path = os.path.join(model_dir, 'timeseries_model.pkl')
     with open(model_path, 'wb') as f:
         pickle.dump(model_data, f)
-
+    
     logger.info(f"Model saved to {model_path}")
-
-    # Also save sample data for testing
-    sample_data_path = 'models/sample_data.csv'
-    df.to_csv(sample_data_path, index=False)
-    logger.info(f"Sample data saved to {sample_data_path}")
-
-    return model_data
+    return model_path
 
 
 if __name__ == "__main__":

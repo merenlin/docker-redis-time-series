@@ -22,9 +22,9 @@ REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 REDIS_DB = int(os.getenv('REDIS_DB', 0))
 
 # Model configuration
-MODEL_PATH = os.getenv('MODEL_PATH', '/app/models/lstm_model.pkl')
-# Number of previous points needed
-LOOKBACK_WINDOW = int(os.getenv('LOOKBACK_WINDOW', 60))
+MODEL_PATH = os.getenv('MODEL_PATH', '/app/models/timeseries_model.pkl')
+# Number of previous points needed for scikit-learn model
+LOOKBACK_WINDOW = int(os.getenv('LOOKBACK_WINDOW', 5))
 
 # Initialize Redis connection
 try:
@@ -52,8 +52,7 @@ class TimeSeriesPredictor:
                     model_data = pickle.load(f)
                     self.model = model_data.get('model')
                     self.scaler = model_data.get('scaler')
-                    self.feature_columns = model_data.get(
-                        'feature_columns', ['value'])
+                    self.lookback_window = model_data.get('lookback_window', 5)
                 logger.info(f"Model loaded successfully from {MODEL_PATH}")
             else:
                 logger.warning(
@@ -67,22 +66,19 @@ class TimeSeriesPredictor:
         """Create a simple dummy model for demonstration purposes"""
         class DummyModel:
             def predict(self, X):
-                # Simple trend + noise prediction
-                if len(X.shape) == 3:  # LSTM format (samples, timesteps, features)
-                    # Get last value from each sequence
-                    last_values = X[:, -1, 0]
+                # Simple trend + noise prediction for 2D scikit-learn format
+                if len(X.shape) == 2:
+                    # Get last value from each sequence (last feature)
+                    last_values = X[:, -1]
                     # Small upward trend with noise
                     trend = np.random.normal(0.02, 0.1, len(last_values))
-                    return (last_values * (1 + trend)).reshape(-1, 1)
-                else:  # 2D format
-                    last_values = X[:, -
-                                    1] if X.shape[1] > 0 else np.zeros(X.shape[0])
-                    trend = np.random.normal(0.02, 0.1, len(last_values))
-                    return (last_values * (1 + trend)).reshape(-1, 1)
+                    return last_values * (1 + trend)
+                else:
+                    return np.array([100.0])  # Fallback
 
         self.model = DummyModel()
         self.scaler = None
-        self.feature_columns = ['value']
+        self.lookback_window = 5
         logger.info("Using dummy model for demonstration")
 
     def predict(self, historical_data: List[Dict]) -> float:
@@ -93,33 +89,32 @@ class TimeSeriesPredictor:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df = df.sort_values('timestamp')
 
-            # Extract features
-            feature_data = df[self.feature_columns].values.astype(float)
+            # Extract values
+            values = df['value'].values.astype(float)
+
+            # Get lookback window (use instance variable or fallback)
+            window = getattr(self, 'lookback_window', LOOKBACK_WINDOW)
+
+            # Prepare features (last 'window' values)
+            if len(values) >= window:
+                features = values[-window:]
+            else:
+                # Pad with the mean if not enough data
+                mean_val = np.mean(values) if len(values) > 0 else 100.0
+                features = np.full(window, mean_val)
+                features[-len(values):] = values
+
+            # Reshape for scikit-learn (1 sample, window features)
+            X = features.reshape(1, -1)
 
             # Apply scaling if available
             if self.scaler:
-                feature_data = self.scaler.transform(feature_data)
-
-            # Reshape for LSTM (samples, timesteps, features)
-            if len(feature_data) >= LOOKBACK_WINDOW:
-                X = feature_data[-LOOKBACK_WINDOW:].reshape(
-                    1, LOOKBACK_WINDOW, len(self.feature_columns))
-            else:
-                # Pad with zeros if not enough data
-                padded_data = np.zeros(
-                    (LOOKBACK_WINDOW, len(self.feature_columns)))
-                padded_data[-len(feature_data):] = feature_data
-                X = padded_data.reshape(
-                    1, LOOKBACK_WINDOW, len(self.feature_columns))
+                X = self.scaler.transform(X)
 
             # Make prediction
             prediction = self.model.predict(X)
 
-            # Inverse transform if scaler available
-            if self.scaler and hasattr(self.scaler, 'inverse_transform'):
-                prediction = self.scaler.inverse_transform(prediction)
-
-            return float(prediction[0][0])
+            return float(prediction[0])
 
         except Exception as e:
             logger.error(f"Prediction error: {e}")
