@@ -47,6 +47,47 @@ curl -X POST http://localhost:5000/predict \
   ]}'
 ```
 
+## Stateless vs Stateful Predictions 🧠
+
+This API demonstrates an important concept in time-series modeling: **the importance of state**.
+
+### With Redis (Stateful) 🎯
+
+When Redis is running, the API remembers your data between requests:
+
+```bash
+curl -X POST http://localhost:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"historical_data": [
+    {"timestamp": "2024-01-01", "value": 100.0},
+    {"timestamp": "2024-01-02", "value": 101.0},
+    {"timestamp": "2024-01-03", "value": 102.0}
+  ]}'
+```
+
+### Without Redis (Stateless) ⚠️
+
+Even if Redis is down, the API will still make predictions using dummy data:
+
+```bash
+curl -X POST http://localhost:5000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"value": 100}'
+```
+
+**Result**: You'll get inconsistent predictions because there's no historical context!
+
+```json
+{
+  "prediction": 103.2,
+  "warning": "STATELESS PREDICTION: No historical context available",
+  "note": "This prediction is based on randomly generated dummy data and will be inconsistent across requests",
+  "prediction_quality": "LOW - No historical context"
+}
+```
+
+**Try calling the same endpoint multiple times** - you'll get different results each time! This perfectly demonstrates why stateful containers are crucial for time-series applications.
+
 ## What you'll get back
 
 The API will return something like:

@@ -199,7 +199,25 @@ def predict():
                 return jsonify({'error': 'Failed to retrieve historical data from cache'}), 500
 
         else:
-            return jsonify({'error': 'No Redis connection and no historical_data provided'}), 500
+            # Mode 3: Stateless prediction - no Redis and no historical data
+            # Generate dummy historical data for demonstration purposes
+            logger.warning(f"Making stateless prediction for series {series_id} - no historical context available")
+            
+            # Create dummy/default historical data points
+            # This will produce inconsistent results, demonstrating the need for stateful storage
+            base_time = datetime.utcnow() - timedelta(days=5)
+            base_value = data.get('value', 100.0)  # Use provided value or default to 100
+            
+            historical_data = []
+            for i in range(LOOKBACK_WINDOW):
+                # Generate some dummy historical points with slight variation
+                dummy_value = base_value + np.random.normal(0, 1)  # Add small random variation
+                historical_data.append({
+                    'timestamp': (base_time + timedelta(days=i)).isoformat(),
+                    'value': float(dummy_value)
+                })
+            
+            stateless_mode = True
 
         # Make prediction
         try:
@@ -213,6 +231,21 @@ def predict():
                 'data_points_used': len(historical_data),
                 'model_type': 'LSTM' if hasattr(predictor.model, 'layers') else 'dummy'
             }
+            
+            # Add warnings and context for stateless predictions
+            if 'stateless_mode' in locals() and stateless_mode:
+                response.update({
+                    'warning': 'STATELESS PREDICTION: No historical context available',
+                    'note': 'This prediction is based on randomly generated dummy data and will be inconsistent across requests',
+                    'recommendation': 'Use Redis for stateful predictions or provide historical_data in the request',
+                    'redis_connected': False,
+                    'prediction_quality': 'LOW - No historical context'
+                })
+            else:
+                response.update({
+                    'redis_connected': redis_client is not None,
+                    'prediction_quality': 'HIGH - Based on historical data'
+                })
 
             # Store prediction in Redis for monitoring
             if redis_client:
