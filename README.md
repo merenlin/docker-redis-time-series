@@ -10,7 +10,8 @@ It might predict the next number could be around: `105`
 ## What's inside?
 
 - **Web API**: A simple website that accepts your data and gives predictions
-- **Memory Storage**: Keeps track of previous predictions so it gets smarter over time
+- **Redis Storage**: Persistent storage for all your time-series data  
+- **Smart Model**: Trend-following algorithm that learns from patterns
 - **Everything runs in containers**: No messy setup - just one command and it works!
 
 ## How to run it?
@@ -94,21 +95,31 @@ The API will return something like:
 
 ```json
 {
-  "prediction": 105.2,
-  "model_type": "dummy",
+  "prediction": 105.0,
+  "model_type": "smart_trend_following",
   "data_points_used": 5,
   "timestamp": "2025-07-31T13:05:09.122812"
 }
 ```
 
-This means: "Based on your 5 data points, I predict the next value will be around 105.2"
+This means: "Based on your 5 data points, I predict the next value will be around 105.0"
+
+The API uses an intelligent trend-following algorithm that:
+- 🔍 **Detects patterns** in your data sequence
+- 📈 **Follows arithmetic sequences** (like 2, 4, 6, 8 → predicts 10)
+- 📊 **Calculates weighted trends** for more complex patterns
+- 🎯 **Gives accurate predictions** for linear and near-linear sequences
 
 ## What's running?
 
 When you start the app, two things happen:
 
 1. **Web API** starts on `http://localhost:5000` - this is where you send your data
-2. **Redis Database** starts on port `6379` - this remembers things between requests
+2. **Redis Database** starts on port `6379` - this stores ALL your data permanently
+
+### The Key Insight 💡
+
+**Redis isn't just a cache** - it's your **persistent database**! All your time-series data lives in Redis permanently, demonstrating how external state storage solves the containerization challenge.
 
 ## How to stop it?
 
