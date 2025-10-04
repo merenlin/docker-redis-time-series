@@ -29,7 +29,7 @@ Wait a few minutes for everything to start up. You'll see lots of text, but don'
 Open your web browser or use this command:
 
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:5001/health
 ```
 
 You should see something like: `"status": "healthy"`
@@ -37,7 +37,7 @@ You should see something like: `"status": "healthy"`
 ### Step 3: Make a prediction
 
 ```bash
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{"historical_data": [
     {"timestamp": "2024-01-01", "value": 100.0},
@@ -57,7 +57,7 @@ This API demonstrates an important concept in time-series modeling: **the import
 When Redis is running, the API remembers your data between requests:
 
 ```bash
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{"historical_data": [
     {"timestamp": "2024-01-01", "value": 100.0},
@@ -71,7 +71,7 @@ curl -X POST http://localhost:5000/predict \
 Even if Redis is down, the API will still make predictions using dummy data:
 
 ```bash
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{"value": 100}'
 ```
@@ -114,7 +114,7 @@ The API uses an intelligent trend-following algorithm that:
 
 When you start the app, two things happen:
 
-1. **Web API** starts on `http://localhost:5000` - this is where you send your data
+1. **Web API** starts on `http://localhost:5001` - this is where you send your data
 2. **Redis Database** starts on port `6379` - this stores ALL your data permanently
 
 ### The Key Insight 💡

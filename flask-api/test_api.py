@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import time
 
 # API Configuration
-API_BASE_URL = "http://localhost:5000"
+API_BASE_URL = "http://localhost:5001"
 
 
 def test_health_check():
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     import numpy as np
 
     print("Flask Time-Series API Test Suite")
-    print("Make sure the Flask API is running on http://localhost:5000")
+    print("Make sure the Flask API is running on http://localhost:5001")
     print("You can start it with: python app.py")
 
     input("\nPress Enter to start tests...")

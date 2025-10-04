@@ -10,7 +10,7 @@ The API has a built-in smart algorithm that can predict simple patterns immediat
 docker-compose up --build api redis
 
 # Test with arithmetic sequence
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{
     "series_id": "test_series",
@@ -36,7 +36,7 @@ docker-compose run --rm data-ingester python data_ingester.py --batch 200
 docker-compose run --rm retrainer python retrain.py
 
 # 3. Test ML predictions
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5001/predict \
   -H "Content-Type: application/json" \
   -d '{"series_id": "sensor_1"}'
 ```
@@ -58,7 +58,7 @@ Data Ingester → Redis → API (Predictions)
 
 ```bash
 # Check system health
-curl http://localhost:5000/health
+curl http://localhost:5001/health
 
 # Start continuous data generation
 docker-compose up data-ingester
