@@ -9,7 +9,7 @@ It might predict the next number could be around: `105`
 
 ## What's inside?
 
-- **Web API**: A simple website that accepts your data and gives predictions
+- **Web API**: A simple web API that accepts your data and gives predictions
 - **Redis Storage**: Persistent storage for all your time-series data  
 - **Smart Model**: Trend-following algorithm that learns from patterns
 - **Everything runs in containers**: No messy setup - just one command and it works!
