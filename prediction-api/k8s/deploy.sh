@@ -51,6 +51,7 @@ kubectl apply -f ingress.yaml
 echo "✅ Deployment completed!"
 
 # Show status
+
 echo "📊 Deployment Status:"
 kubectl get pods -n prediction-api
 kubectl get services -n prediction-api

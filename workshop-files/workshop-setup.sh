@@ -44,25 +44,20 @@ echo "✅ All prerequisites are met!"
 
 # Build the Docker image
 echo "🐳 Building Docker image..."
-docker build -t prediction-api:latest .
+cd ../prediction-api && docker build -t prediction-api:latest . && cd ../workshop-files
 
-# Create workshop directory
-echo "📁 Creating workshop directory..."
-mkdir -p workshop-files
-
-# Copy important files to workshop directory
+# Copy important files to current directory (we're already in workshop-files)
 echo "📋 Preparing workshop files..."
-cp workshop.md workshop-files/
-cp docker-compose.yml workshop-files/
-cp -r k8s workshop-files/
+# Files are already in the right place since we're running from workshop-files
+# Note: docker-compose.yml stays in prediction-api directory where it belongs
 
 # Copy instructor notes if they exist
-if [ -f "workshop-instructor-notes.md" ]; then
-    cp workshop-instructor-notes.md workshop-files/
+if [ -f "../prediction-api/workshop-instructor-notes.md" ]; then
+    cp ../prediction-api/workshop-instructor-notes.md .
 fi
 
 # Create a quick test script
-cat > workshop-files/quick-test.sh << 'EOF'
+cat > quick-test.sh << 'EOF'
 #!/bin/bash
 echo "🧪 Quick Workshop Test"
 echo "====================="
@@ -95,34 +90,31 @@ echo "🌐 API available at: http://localhost:5001"
 echo "📚 API docs at: http://localhost:5001/"
 EOF
 
-chmod +x workshop-files/quick-test.sh
+chmod +x quick-test.sh
 
 # Create cleanup script
-cat > workshop-files/cleanup.sh << 'EOF'
+cat > cleanup.sh << 'EOF'
 #!/bin/bash
 echo "🧹 Cleaning up workshop environment..."
 
 echo "Stopping Docker Compose services..."
-docker-compose down -v
+cd ../prediction-api && docker-compose down -v && cd ../workshop-files
 
 echo "Cleaning up Kubernetes resources..."
 kubectl delete namespace prediction-api 2>/dev/null || true
 
-echo "Removing workshop files..."
-cd .. && rm -rf workshop-files
-
 echo "✅ Cleanup completed!"
 EOF
 
-chmod +x workshop-files/cleanup.sh
+chmod +x cleanup.sh
 
 echo ""
 echo "🎉 Workshop setup completed!"
 echo ""
-echo "📁 Workshop files are in: workshop-files/"
-echo "🧪 Quick test: cd workshop-files && ./quick-test.sh"
-echo "🧹 Cleanup: cd workshop-files && ./cleanup.sh"
+echo "📁 Workshop files are ready in current directory"
+echo "🧪 Quick test: ./quick-test.sh"
+echo "🧹 Cleanup: ./cleanup.sh"
 echo ""
-echo "📚 Workshop guide: workshop-files/workshop.md"
+echo "📚 Workshop guide: ./workshop.md"
 echo ""
 echo "🚀 Ready for the workshop!"

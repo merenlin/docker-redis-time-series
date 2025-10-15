@@ -3,7 +3,7 @@ echo "🧪 Quick Workshop Test"
 echo "====================="
 
 echo "1. Starting services..."
-cd .. && docker-compose up -d && cd workshop-files
+docker-compose up -d
 
 echo "2. Waiting for services to be ready..."
 sleep 10
@@ -23,7 +23,7 @@ curl -s -X POST http://localhost:5001/predict \
   }' | jq .
 
 echo "5. Checking Redis data..."
-cd .. && docker-compose exec redis redis-cli KEYS "*workshop-test*" && cd workshop-files
+docker-compose exec redis redis-cli KEYS "*workshop-test*"
 
 echo "✅ Quick test completed!"
 echo "🌐 API available at: http://localhost:5001"

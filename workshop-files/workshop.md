@@ -218,7 +218,8 @@ By the end of this workshop, you will understand:
 
 2. **Deploy using the provided script:**
    ```bash
-   cd k8s
+   # Navigate to the k8s directory in the main project
+   cd ../prediction-api/k8s
    ./deploy-docker-desktop.sh
    ```
 

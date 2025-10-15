@@ -7,6 +7,7 @@ This directory contains all the materials needed for the Redis workshop:
 ### 📚 Main Workshop Materials
 - **`workshop.md`** - Complete step-by-step workshop guide for participants
 - **`workshop-setup.sh`** - Automated setup script for workshop preparation
+- **`../prediction-api/k8s/`** - Kubernetes deployment manifests and scripts
 
 ### 🚀 Quick Start
 
@@ -17,7 +18,6 @@ This directory contains all the materials needed for the Redis workshop:
 
 2. **Start the workshop:**
    ```bash
-   cd workshop-files
    ./quick-test.sh  # Verify everything works
    ```
 
@@ -62,7 +62,6 @@ By the end of the workshop, participants will understand:
 
 After the workshop:
 ```bash
-cd workshop-files
 ./cleanup.sh
 ```
 
